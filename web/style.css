@@ -49,3 +49,7 @@ input[type=button] {
     font-weight: bold;
     color: #00007f;
 }
+
+.token-error {
+    background: url(underline.gif) bottom repeat-x;
+}

@@ -1,7 +1,6 @@
 package org.zwobble.shed.parser.web;
 
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
@@ -19,6 +18,7 @@ import org.zwobble.shed.parser.tokeniser.Tokeniser;
 
 import com.google.common.base.Joiner;
 import com.google.common.io.CharStreams;
+import com.google.common.io.Files;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -113,7 +113,7 @@ public class WebApplication {
 
         private void handleFileRequest(HttpExchange httpExchange) throws IOException {
             FileInfo file = readFileFromPath(httpExchange.getRequestURI().getPath());
-            byte[] responseBody = file.getBody().getBytes();
+            byte[] responseBody = file.getBody();
             
             Headers responseHeaders = httpExchange.getResponseHeaders();
             responseHeaders.add("Content-Type", file.getContentType());
@@ -131,7 +131,8 @@ public class WebApplication {
                 path = "web/index.html";
             }
             try {
-                return new FileInfo(Joiner.on("\n").join(CharStreams.readLines(new FileReader(path))), contentTypeForPath(path));
+                
+                return new FileInfo(Files.toByteArray(new File(path)), contentTypeForPath(path));
             } catch (Exception e) {
                 e.printStackTrace();
                 throw new RuntimeException(e);
@@ -145,13 +146,16 @@ public class WebApplication {
             if (path.endsWith(".css")) {
                 return "text/css";
             }
+            if (path.endsWith(".gif")) {
+                return "image/gif";
+            }
             return "text/html";
         }
     }
     
     @Data
     private static class FileInfo {
-        private final String body;
+        private final byte[] body;
         private final String contentType;
     }
 }

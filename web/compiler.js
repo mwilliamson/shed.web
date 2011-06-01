@@ -1,5 +1,14 @@
 $(document).ready(function() {
-    var displayErrors = function(errors) {
+    // TODO: handle errors that are larger than a single token
+    var findError = function(token, errors) {
+            for (var i = 0; i < errors.length; i += 1) {
+                if (errors[i].lineNumber === token.lineNumber && errors[i].characterNumber === token.characterNumber) {
+                    return errors[i].description;
+                }
+            }
+            return null;
+        },
+        displayErrors = function(errors) {
             var errorsBody = $("#errors tbody").empty();
             $.each(errors, function(index, error) {
                 var row = $(document.createElement("tr"));
@@ -8,14 +17,17 @@ $(document).ready(function() {
                 errorsBody.append(row);
             });
         },
-        displayHighlightedSource = function(tokens) {
-            var element = $("#annotated-source").empty();
+        displayHighlightedSource = function(tokens, errors) {
+            var sourceElement = $("#annotated-source").empty();
             $.each(tokens, function(index, token) {
-                element.append(
-                    $(document.createElement("span"))
+                var error = findError(token, errors),
+                    element = $(document.createElement("span"))
                         .text(token.value)
-                        .addClass("token-" + token.type)
-                );
+                        .addClass("token-" + token.type);
+                if (error) {
+                    element.addClass("token-error");
+                }
+                sourceElement.append(element);
             });
         };
     $("#source input").click(function() {
@@ -25,7 +37,7 @@ $(document).ready(function() {
             data: $("#source textarea").val(),
             type: "POST",
             success: function(response) {
-                displayHighlightedSource(response.tokens);
+                displayHighlightedSource(response.tokens, response.errors);
                 displayErrors(response.errors);
             }
         });
