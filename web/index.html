@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>ShedScript Compiler</title>
+    <link href="style.css" rel="stylesheet" type="text/css" />
+    <script src="http://code.jquery.com/jquery-1.6.1.min.js"></script>
+    <script src="compiler.js"></script>
+  </head>
+  <body>
+    <div id="source">
+      <textarea rows="20" cols="50"></textarea>
+      <input type="button" value="Compile" />
+    </div>
+    <div id="output">
+      <pre id="annotated-source"></pre>
+      <table id="errors">
+        <thead>
+          <th>Error</th>
+          <th>Location</th>
+        </thead>
+        <tbody>
+        </tbody>
+      </table>
+    </div>
+  </body>
+</html>
