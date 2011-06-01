@@ -27,6 +27,9 @@ $(document).ready(function() {
                 if (error) {
                     element.addClass("token-error");
                 }
+                if (token.type === "end" && error) {
+                    element.text(" ");
+                }
                 sourceElement.append(element);
             });
         };
