@@ -106,6 +106,7 @@ public class WebApplication {
                 errorJson.add("description", new JsonPrimitive(error.getDescription()));
                 errorJson.add("lineNumber", new JsonPrimitive(error.getLineNumber()));
                 errorJson.add("characterNumber", new JsonPrimitive(error.getCharacterNumber()));
+                errorJson.add("length", new JsonPrimitive(error.getLength()));
                 json.add(errorJson);
             }
             return json;
