@@ -45,6 +45,24 @@ input[type=button] {
     width: 150px;
 }
 
+#annotated-source {
+    position: relative;
+}
+
+#source-with-errors {
+    position: absolute;
+    left: 0;
+    top: 0;
+}
+
+#annotated-source pre, #source-with-errors pre {
+    margin: 0;
+}
+
+#source-with-errors pre {
+    color: rgba(0, 0, 0, 0);
+}
+
 .token-keyword {
     font-weight: bold;
     color: #00007f;

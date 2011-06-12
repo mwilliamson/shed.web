@@ -16,10 +16,24 @@ $(document).ready(function() {
                 tooltip.remove();
             });
         },
-        findError = function(token, errors) {
+        positionCompare = function(first, second) {
+            if (first.lineNumber < second.lineNumber) {
+                return -1;
+            }
+            if (first.lineNumber === second.lineNumber) {
+                return first.characterNumber - second.characterNumber;
+            }
+            if (first.lineNumber > second.lineNumber) {
+                return 1;
+            }
+        },
+        findError = function(errors, currentPosition) {
+            var start, end;
             for (var i = 0; i < errors.length; i += 1) {
-                if (errors[i].lineNumber === token.lineNumber && errors[i].characterNumber === token.characterNumber) {
-                    return errors[i].description;
+                start = errors[i].start;
+                end = errors[i].end;
+                if (positionCompare(start, currentPosition) <= 0 && positionCompare(currentPosition, end) < 0) {
+                    return errors[i];
                 }
             }
             return null;
@@ -29,29 +43,58 @@ $(document).ready(function() {
             $.each(errors, function(index, error) {
                 var row = $(document.createElement("tr"));
                 row.append($(document.createElement("td")).text(error.description));
-                row.append($(document.createElement("td")).text("Line " + error.lineNumber + ", char " + error.characterNumber));
+                row.append($(document.createElement("td")).text("Line " + error.start.lineNumber + ", char " + error.start.characterNumber));
                 errorsBody.append(row);
             });
         },
-        displayHighlightedSource = function(tokens, errors) {
-            var sourceElement = $("#annotated-source").empty();
+        displayHighlightedSource = function(tokens) {
+            var sourceElement = $("#highlighted-source").empty();
             $.each(tokens, function(index, token) {
-                var error = findError(token, errors),
-                    element = $(document.createElement("span"))
-                        .text(token.value)
-                        .addClass("token-" + token.type);
-                if (error) {
-                    element.addClass("token-error");
-                    addTooltip(element, error);
-                }
-                if (token.type === "end" && error) {
-                    element.text(" ");
-                }
-                if (token.value.replace(/\r/g, "").replace(/\n/g, "") === "" && error) {
-                    element.text(" " + token.value);
-                }
-                sourceElement.append(element);
+                var element = $(document.createElement("span"))
+                    .text(token.value)
+                    .addClass("token-" + token.type)
+                    .appendTo(sourceElement);
             });
+        },
+        displaySourceWithErrors = function(tokens, errors) {
+            var sourceElement = $("#source-with-errors").empty(),
+                characters = $.map(tokens, function(token) {
+                    return token.value;
+                }).join("").split(""),
+                appendErrorCharacter = function(character, error) {
+                    var element = $(document.createElement("span")).text(character);
+                    if (error) {
+                        element.addClass("token-error");
+                        addTooltip(element, error.description);
+                    }
+                    if (character === "\n") {
+                        element.text(" \n");
+                    }
+                    sourceElement.append(element);
+                },
+                lineNumber = 1,
+                characterNumber = 1;
+            $.each(characters, function(index, character) {
+                var error = findError(errors, {lineNumber: lineNumber, characterNumber: characterNumber});
+                appendErrorCharacter(character, error);
+                if (character === "\n") {
+                    lineNumber += 1;
+                    characterNumber = 1;
+                } else {
+                    characterNumber += 1;
+                }
+            });
+            
+            for (var i = 0; i < errors.length; i += 1) {
+                if (positionCompare(errors[i].start, {lineNumber: lineNumber, characterNumber: characterNumber}) === 0) {
+                    appendErrorCharacter(" ", errors[i])
+                    return;
+                }
+            }
+        },
+        displayHighlightedSourceWithErrors = function(tokens, errors) {
+            displayHighlightedSource(tokens);
+            displaySourceWithErrors(tokens, errors);
         };
     $("#source input").click(function() {
         $.ajax({
@@ -60,7 +103,7 @@ $(document).ready(function() {
             data: $("#source textarea").val(),
             type: "POST",
             success: function(response) {
-                displayHighlightedSource(response.tokens, response.errors);
+                displayHighlightedSourceWithErrors(response.tokens, response.errors);
                 displayErrors(response.errors);
             }
         });

@@ -11,6 +11,7 @@ import lombok.Data;
 import org.zwobble.shed.parser.parsing.CompilerError;
 import org.zwobble.shed.parser.parsing.Parser;
 import org.zwobble.shed.parser.parsing.Result;
+import org.zwobble.shed.parser.parsing.SourcePosition;
 import org.zwobble.shed.parser.parsing.TokenIterator;
 import org.zwobble.shed.parser.parsing.nodes.SourceNode;
 import org.zwobble.shed.parser.tokeniser.TokenPosition;
@@ -86,8 +87,7 @@ public class WebApplication {
             JsonArray json = new JsonArray();
             for (TokenPosition tokenPosition : tokens) {
                 JsonObject tokenJson = new JsonObject();
-                tokenJson.add("lineNumber", new JsonPrimitive(tokenPosition.getLineNumber()));
-                tokenJson.add("characterNumber", new JsonPrimitive(tokenPosition.getCharacterNumber()));
+                tokenJson.add("position", positionToJson(tokenPosition.getPosition()));
                 String value = tokenPosition.getToken().getValue();
                 if (value == null) {
                     value = "";
@@ -104,11 +104,17 @@ public class WebApplication {
             for (CompilerError error : errors) {
                 JsonObject errorJson = new JsonObject();
                 errorJson.add("description", new JsonPrimitive(error.getDescription()));
-                errorJson.add("lineNumber", new JsonPrimitive(error.getLineNumber()));
-                errorJson.add("characterNumber", new JsonPrimitive(error.getCharacterNumber()));
-                errorJson.add("length", new JsonPrimitive(error.getLength()));
+                errorJson.add("start", positionToJson(error.getStart()));
+                errorJson.add("end", positionToJson(error.getEnd()));
                 json.add(errorJson);
             }
+            return json;
+        }
+        
+        private JsonElement positionToJson(SourcePosition position) {
+            JsonObject json = new JsonObject();
+            json.add("lineNumber", new JsonPrimitive(position.getLineNumber()));
+            json.add("characterNumber", new JsonPrimitive(position.getCharacterNumber()));
             return json;
         }
 
