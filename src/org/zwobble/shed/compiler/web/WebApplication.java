@@ -1,4 +1,4 @@
-package org.zwobble.shed.parser.web;
+package org.zwobble.shed.compiler.web;
 
 import java.io.File;
 import java.io.IOException;
@@ -8,14 +8,14 @@ import java.util.List;
 
 import lombok.Data;
 
-import org.zwobble.shed.parser.parsing.CompilerError;
-import org.zwobble.shed.parser.parsing.Parser;
-import org.zwobble.shed.parser.parsing.Result;
-import org.zwobble.shed.parser.parsing.SourcePosition;
-import org.zwobble.shed.parser.parsing.TokenIterator;
-import org.zwobble.shed.parser.parsing.nodes.SourceNode;
-import org.zwobble.shed.parser.tokeniser.TokenPosition;
-import org.zwobble.shed.parser.tokeniser.Tokeniser;
+import org.zwobble.shed.compiler.parsing.CompilerError;
+import org.zwobble.shed.compiler.parsing.Parser;
+import org.zwobble.shed.compiler.parsing.Result;
+import org.zwobble.shed.compiler.parsing.SourcePosition;
+import org.zwobble.shed.compiler.parsing.TokenIterator;
+import org.zwobble.shed.compiler.parsing.nodes.SourceNode;
+import org.zwobble.shed.compiler.tokeniser.TokenPosition;
+import org.zwobble.shed.compiler.tokeniser.Tokeniser;
 
 import com.google.common.base.Joiner;
 import com.google.common.io.CharStreams;
