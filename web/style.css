@@ -68,8 +68,13 @@ input[type=button] {
     color: #00007f;
 }
 
-.token-error {
+.token-error, .token-unterminated-string, .token-string-with-invalid-escape-codes {
     background: url(underline.gif) bottom repeat-x;
+}
+
+.token-string, .token-unterminated-string, .token-string-with-invalid-escape-codes {
+    font-weight: bold;
+    color: #aa3300;
 }
 
 .tooltip {

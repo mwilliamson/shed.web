@@ -117,7 +117,7 @@ public class WebApplication {
                     sourceString = "";
                 }
                 tokenJson.add("sourceString", new JsonPrimitive(sourceString));
-                tokenJson.add("type", new JsonPrimitive(tokenPosition.getToken().getType().name().toLowerCase()));
+                tokenJson.add("type", new JsonPrimitive(tokenPosition.getToken().getType().name().toLowerCase().replace("_", "-")));
                 json.add(tokenJson);
             }
             return json;
