@@ -50,7 +50,7 @@ $(document).ready(function() {
             var sourceElement = $("#highlighted-source").empty();
             $.each(tokens, function(index, token) {
                 var element = $(document.createElement("span"))
-                    .text(token.value)
+                    .text(token.sourceString)
                     .addClass("token-" + token.type)
                     .appendTo(sourceElement);
             });
@@ -90,7 +90,7 @@ $(document).ready(function() {
             }
         },
         displayHighlightedSourceWithErrors = function(source, tokens, errors) {
-            displayHighlightedSource(source, tokens);
+            displayHighlightedSource(tokens);
             displaySourceWithErrors(source, errors);
         };
     $("#source input").click(function() {

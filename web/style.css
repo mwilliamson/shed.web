@@ -55,11 +55,11 @@ input[type=button] {
     top: 0;
 }
 
-#annotated-source pre, #source-with-errors pre {
+#annotated-source, #source-with-errors {
     margin: 0;
 }
 
-#source-with-errors pre {
+#source-with-errors {
     color: rgba(0, 0, 0, 0);
 }
 

@@ -112,6 +112,11 @@ public class WebApplication {
                     value = "";
                 }
                 tokenJson.add("value", new JsonPrimitive(value));
+                String sourceString = tokenPosition.getToken().getSourceString();
+                if (sourceString == null) {
+                    sourceString = "";
+                }
+                tokenJson.add("sourceString", new JsonPrimitive(sourceString));
                 tokenJson.add("type", new JsonPrimitive(tokenPosition.getToken().getType().name().toLowerCase()));
                 json.add(tokenJson);
             }
