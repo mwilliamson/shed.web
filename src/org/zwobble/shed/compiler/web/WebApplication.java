@@ -4,18 +4,24 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.List;
 
 import lombok.Data;
 
 import org.zwobble.shed.compiler.parsing.CompilerError;
 import org.zwobble.shed.compiler.parsing.ParseResult;
+import org.zwobble.shed.compiler.parsing.Parser;
 import org.zwobble.shed.compiler.parsing.SourcePosition;
 import org.zwobble.shed.compiler.parsing.TokenIterator;
-import org.zwobble.shed.compiler.parsing.TopLevelNodes;
 import org.zwobble.shed.compiler.parsing.nodes.SourceNode;
 import org.zwobble.shed.compiler.tokeniser.TokenPosition;
 import org.zwobble.shed.compiler.tokeniser.Tokeniser;
+import org.zwobble.shed.compiler.typechecker.StaticContext;
+import org.zwobble.shed.compiler.typechecker.TypeChecker;
+import org.zwobble.shed.compiler.typechecker.TypeInferer;
+import org.zwobble.shed.compiler.typechecker.TypeLookup;
+import org.zwobble.shed.compiler.typechecker.TypeResult;
 
 import com.google.common.base.Joiner;
 import com.google.common.io.CharStreams;
@@ -58,9 +64,21 @@ public class WebApplication {
 
                 String source = Joiner.on("\n").join(CharStreams.readLines(new InputStreamReader(httpExchange.getRequestBody())));
                 System.out.println("Source: " + source);
+
+                List<CompilerError> errors = new ArrayList<CompilerError>();
+                
                 List<TokenPosition> tokens = new Tokeniser().tokenise(source);
-                ParseResult<SourceNode> parseResult = TopLevelNodes.source().parse(new TokenIterator(tokens));
-                List<CompilerError> errors = parseResult.getErrors();
+                ParseResult<SourceNode> parseResult = new Parser().parse(new TokenIterator(tokens));
+                errors.addAll(parseResult.getErrors());
+                
+                if (parseResult.isSuccess()) {
+                    TypeLookup typeLookup = new TypeLookup(parseResult);
+                    TypeInferer typeInferer = new TypeInferer(parseResult, typeLookup);
+                    TypeChecker typeChecker = new TypeChecker(parseResult, typeLookup, typeInferer);
+                    TypeResult<Void> typeCheckResult = typeChecker.typeCheck(parseResult.get(), StaticContext.defaultContext());
+                    errors.addAll(typeCheckResult.getErrors());
+                }
+                
                 
                 String response = resultToJson(tokens, errors);
                 
