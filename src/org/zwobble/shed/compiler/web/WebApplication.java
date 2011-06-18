@@ -9,10 +9,10 @@ import java.util.List;
 import lombok.Data;
 
 import org.zwobble.shed.compiler.parsing.CompilerError;
-import org.zwobble.shed.compiler.parsing.Parser;
-import org.zwobble.shed.compiler.parsing.Result;
+import org.zwobble.shed.compiler.parsing.ParseResult;
 import org.zwobble.shed.compiler.parsing.SourcePosition;
 import org.zwobble.shed.compiler.parsing.TokenIterator;
+import org.zwobble.shed.compiler.parsing.TopLevelNodes;
 import org.zwobble.shed.compiler.parsing.nodes.SourceNode;
 import org.zwobble.shed.compiler.tokeniser.TokenPosition;
 import org.zwobble.shed.compiler.tokeniser.Tokeniser;
@@ -59,9 +59,10 @@ public class WebApplication {
                 String source = Joiner.on("\n").join(CharStreams.readLines(new InputStreamReader(httpExchange.getRequestBody())));
                 System.out.println("Source: " + source);
                 List<TokenPosition> tokens = new Tokeniser().tokenise(source);
-                Result<SourceNode> parseResult = new Parser().source().parse(new TokenIterator(tokens));
+                ParseResult<SourceNode> parseResult = TopLevelNodes.source().parse(new TokenIterator(tokens));
+                List<CompilerError> errors = parseResult.getErrors();
                 
-                String response = parseResultToJson(tokens, parseResult);
+                String response = resultToJson(tokens, errors);
                 
                 byte[] responseBody = response.getBytes();
                 
@@ -76,10 +77,10 @@ public class WebApplication {
             }
         }
 
-        private String parseResultToJson(List<TokenPosition> tokens, Result<SourceNode> parseResult) {
+        private String resultToJson(List<TokenPosition> tokens, List<CompilerError> errors) {
             JsonObject response = new JsonObject();
             response.add("tokens", tokensToJson(tokens));
-            response.add("errors", errorsToJson(parseResult.getErrors()));
+            response.add("errors", errorsToJson(errors));
             return response.toString();
         }
 
@@ -104,8 +105,8 @@ public class WebApplication {
             for (CompilerError error : errors) {
                 JsonObject errorJson = new JsonObject();
                 errorJson.add("description", new JsonPrimitive(error.getDescription()));
-                errorJson.add("start", positionToJson(error.getStart()));
-                errorJson.add("end", positionToJson(error.getEnd()));
+                errorJson.add("start", positionToJson(error.getLocation().getStart()));
+                errorJson.add("end", positionToJson(error.getLocation().getEnd()));
                 json.add(errorJson);
             }
             return json;
