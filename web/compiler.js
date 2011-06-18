@@ -1,5 +1,4 @@
 $(document).ready(function() {
-    // TODO: handle errors that are larger than a single token
     var addTooltip = function(element, text) {
             var tooltip;
             element.mouseover(function() {
@@ -56,11 +55,9 @@ $(document).ready(function() {
                     .appendTo(sourceElement);
             });
         },
-        displaySourceWithErrors = function(tokens, errors) {
+        displaySourceWithErrors = function(source, errors) {
             var sourceElement = $("#source-with-errors").empty(),
-                characters = $.map(tokens, function(token) {
-                    return token.value;
-                }).join("").split(""),
+                characters = source.split(""),
                 appendErrorCharacter = function(character, error) {
                     var element = $(document.createElement("span")).text(character);
                     if (error) {
@@ -92,18 +89,19 @@ $(document).ready(function() {
                 }
             }
         },
-        displayHighlightedSourceWithErrors = function(tokens, errors) {
-            displayHighlightedSource(tokens);
-            displaySourceWithErrors(tokens, errors);
+        displayHighlightedSourceWithErrors = function(source, tokens, errors) {
+            displayHighlightedSource(source, tokens);
+            displaySourceWithErrors(source, errors);
         };
     $("#source input").click(function() {
+        var source = $("#source textarea").val();
         $.ajax({
             url: "/compile",
             dataType: "json",
-            data: $("#source textarea").val(),
+            data: source,
             type: "POST",
             success: function(response) {
-                displayHighlightedSourceWithErrors(response.tokens, response.errors);
+                displayHighlightedSourceWithErrors(source, response.tokens, response.errors);
                 displayErrors(response.errors);
             }
         });
