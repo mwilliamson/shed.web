@@ -68,7 +68,7 @@ input[type=button] {
     color: #00007f;
 }
 
-.token-error, .token-unterminated-string, .token-string-with-invalid-escape-codes {
+.token-error {
     background: url(underline.gif) bottom repeat-x;
 }
 
