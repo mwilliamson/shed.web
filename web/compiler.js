@@ -105,6 +105,8 @@ $(document).ready(function() {
                 displayErrors(response.errors);
                 if (response.javascript) {
                     $("#javascript").text(response.javascript);
+                } else {
+                    $("#javascript").empty();
                 }
             }
         });
