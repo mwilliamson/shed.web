@@ -2,6 +2,14 @@ body {
     font: 1em sans-serif;
 }
 
+h2 {
+    font-size: 1.1em;
+}
+
+h3 {
+    font-size: 1em;
+}
+
 #source, #output {
     float: left;
     padding: 1em;

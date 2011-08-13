@@ -9,6 +9,11 @@ import java.util.List;
 
 import lombok.Data;
 
+import org.zwobble.shed.compiler.codegenerator.BrowserImportGenerator;
+import org.zwobble.shed.compiler.codegenerator.BrowserModuleWrapper;
+import org.zwobble.shed.compiler.codegenerator.JavaScriptGenerator;
+import org.zwobble.shed.compiler.codegenerator.JavaScriptWriter;
+import org.zwobble.shed.compiler.codegenerator.javascript.JavaScriptNode;
 import org.zwobble.shed.compiler.parsing.CompilerError;
 import org.zwobble.shed.compiler.parsing.ParseResult;
 import org.zwobble.shed.compiler.parsing.Parser;
@@ -19,8 +24,6 @@ import org.zwobble.shed.compiler.tokeniser.TokenPosition;
 import org.zwobble.shed.compiler.tokeniser.Tokeniser;
 import org.zwobble.shed.compiler.typechecker.StaticContext;
 import org.zwobble.shed.compiler.typechecker.TypeChecker;
-import org.zwobble.shed.compiler.typechecker.TypeInferer;
-import org.zwobble.shed.compiler.typechecker.TypeLookup;
 import org.zwobble.shed.compiler.typechecker.TypeResult;
 
 import com.google.common.base.Joiner;
@@ -70,17 +73,23 @@ public class WebApplication {
                 List<TokenPosition> tokens = new Tokeniser().tokenise(source);
                 ParseResult<SourceNode> parseResult = new Parser().parse(new TokenIterator(tokens));
                 errors.addAll(parseResult.getErrors());
+                String javaScriptOutput = null;
                 
                 if (parseResult.isSuccess()) {
-                    TypeLookup typeLookup = new TypeLookup(parseResult);
-                    TypeInferer typeInferer = new TypeInferer(parseResult, typeLookup);
-                    TypeChecker typeChecker = new TypeChecker(parseResult, typeLookup, typeInferer);
-                    TypeResult<Void> typeCheckResult = typeChecker.typeCheck(parseResult.get(), StaticContext.defaultContext());
+                    TypeResult<Void> typeCheckResult = TypeChecker.typeCheck(parseResult.get(), parseResult, StaticContext.defaultContext());
                     errors.addAll(typeCheckResult.getErrors());
+                    
+                    if (typeCheckResult.isSuccess()) {
+                        JavaScriptGenerator javaScriptGenerator =
+                            new JavaScriptGenerator(new BrowserImportGenerator(), new BrowserModuleWrapper());
+                        JavaScriptNode javaScript = javaScriptGenerator.generate(parseResult.get());
+                        JavaScriptWriter javaScriptWriter = new JavaScriptWriter();
+                        javaScriptOutput = javaScriptWriter.write(javaScript);
+                    }
                 }
                 
                 
-                String response = resultToJson(tokens, errors);
+                String response = resultToJson(tokens, errors, javaScriptOutput);
                 
                 byte[] responseBody = response.getBytes();
                 
@@ -95,10 +104,13 @@ public class WebApplication {
             }
         }
 
-        private String resultToJson(List<TokenPosition> tokens, List<CompilerError> errors) {
+        private String resultToJson(List<TokenPosition> tokens, List<CompilerError> errors, String javaScriptOutput) {
             JsonObject response = new JsonObject();
             response.add("tokens", tokensToJson(tokens));
             response.add("errors", errorsToJson(errors));
+            if (javaScriptOutput != null) {
+                response.addProperty("javascript", javaScriptOutput);
+            }
             return response.toString();
         }
 

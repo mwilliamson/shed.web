@@ -3,7 +3,7 @@
   <head>
     <title>ShedScript Compiler</title>
     <link href="style.css" rel="stylesheet" type="text/css" />
-    <script src="http://code.jquery.com/jquery-1.6.1.min.js"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.1/jquery.min.js"></script>
     <script src="compiler.js"></script>
   </head>
   <body>
@@ -12,10 +12,13 @@
       <input type="button" value="Compile" />
     </div>
     <div id="output">
+      <!--<h2>Compilation result</h2>-->
       <div id="annotated-source">
+        <h3>Source</h3>
         <pre id="highlighted-source"></pre>
         <pre id="source-with-errors"></pre>
       </div>
+      <h3>Errors</h3>
       <table id="errors">
         <thead>
           <th>Error</th>
@@ -24,6 +27,9 @@
         <tbody>
         </tbody>
       </table>
+      <h3>Compiled JavaScript</h3>
+      <pre id="javascript">
+      </pre>
     </div>
   </body>
 </html>

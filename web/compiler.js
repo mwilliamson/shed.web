@@ -103,6 +103,9 @@ $(document).ready(function() {
             success: function(response) {
                 displayHighlightedSourceWithErrors(source, response.tokens, response.errors);
                 displayErrors(response.errors);
+                if (response.javascript) {
+                    $("#javascript").text(response.javascript);
+                }
             }
         });
     });
