@@ -38,13 +38,19 @@ $(document).ready(function() {
             return null;
         },
         displayErrors = function(errors) {
-            var errorsBody = $("#errors tbody").empty();
-            $.each(errors, function(index, error) {
-                var row = $(document.createElement("tr"));
-                row.append($(document.createElement("td")).text(error.description));
-                row.append($(document.createElement("td")).text("Line " + error.start.lineNumber + ", char " + error.start.characterNumber));
-                errorsBody.append(row);
-            });
+            var errorsElement = $("#errors");
+            var errorsBody = errorsElement.find("tbody").empty();
+            if (errors.length > 0) {
+                errorsElement.show();
+                $.each(errors, function(index, error) {
+                    var row = $(document.createElement("tr"));
+                    row.append($(document.createElement("td")).text(error.description));
+                    row.append($(document.createElement("td")).text("Line " + error.start.lineNumber + ", char " + error.start.characterNumber));
+                    errorsBody.append(row);
+                });
+            } else {
+                errorsElement.hide();
+            }
         },
         displayHighlightedSource = function(tokens) {
             var sourceElement = $("#highlighted-source").empty();
@@ -92,6 +98,15 @@ $(document).ready(function() {
         displayHighlightedSourceWithErrors = function(source, tokens, errors) {
             displayHighlightedSource(tokens);
             displaySourceWithErrors(source, errors);
+        },
+        displayJavaScript = function(javascript) {
+            var javaScriptElement = $("#javascript");
+            if (javascript) {
+                javaScriptElement.show();
+                javaScriptElement.find("pre").text(javascript);
+            } else {
+                javaScriptElement.hide();
+            }
         };
     $("#source input").click(function() {
         var source = $("#source textarea").val();
@@ -103,11 +118,7 @@ $(document).ready(function() {
             success: function(response) {
                 displayHighlightedSourceWithErrors(source, response.tokens, response.errors);
                 displayErrors(response.errors);
-                if (response.javascript) {
-                    $("#javascript").text(response.javascript);
-                } else {
-                    $("#javascript").empty();
-                }
+                displayJavaScript(response.javascript);
             }
         });
     });

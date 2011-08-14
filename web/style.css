@@ -19,7 +19,7 @@ h3 {
     margin-right: 2em;
 }
 
-#source, #errors {
+#source, #errors table {
     text-align: center;
 }
 
@@ -39,7 +39,7 @@ input[type=button] {
     cursor: pointer;
 }
 
-#errors {
+#errors table {
     table-layout: fixed;
     width: 400px;
     font-size: 0.8em;
