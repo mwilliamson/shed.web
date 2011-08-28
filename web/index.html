@@ -8,7 +8,15 @@
   </head>
   <body>
     <div id="source">
-      <textarea rows="20" cols="50"></textarea>
+      <textarea rows="20" cols="50">package blah;
+
+import shed.browser;
+
+object bob {
+    public val officialName = () => "Bob Bobertson III";
+}
+
+browser.alert(bob.officalName());</textarea>
       <input type="button" value="Compile" />
     </div>
     <div id="output">
