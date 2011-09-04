@@ -35,8 +35,11 @@ input[type=button] {
     font-size: 1em;
     font-weight: bold;
     color: #fff;
-    margin-top: 1em;
     cursor: pointer;
+}
+
+#source input {
+    margin-top: 1em;
 }
 
 #errors table {
@@ -91,4 +94,8 @@ input[type=button] {
     background-color: #ffc;
     border: 1px solid #888;
     padding: 0.3em 1em;
+}
+
+.run-it {
+    float: right;
 }

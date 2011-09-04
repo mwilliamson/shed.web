@@ -1,4 +1,5 @@
 $(document).ready(function() {
+    var compiledJavaScript;
     var addTooltip = function(element, text) {
             var tooltip;
             element.mouseover(function() {
@@ -119,7 +120,11 @@ $(document).ready(function() {
                 displayHighlightedSourceWithErrors(source, response.tokens, response.errors);
                 displayErrors(response.errors);
                 displayJavaScript(response.javascript);
+                compiledJavaScript = response.javascript;
             }
         });
+    });
+    $("#javascript .run-it").click(function() {
+        eval(compiledJavaScript);
     });
 });
