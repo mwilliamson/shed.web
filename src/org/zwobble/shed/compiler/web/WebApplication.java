@@ -2,6 +2,7 @@ package org.zwobble.shed.compiler.web;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -22,10 +23,13 @@ import org.zwobble.shed.compiler.parsing.TokenIterator;
 import org.zwobble.shed.compiler.parsing.nodes.SourceNode;
 import org.zwobble.shed.compiler.tokeniser.TokenPosition;
 import org.zwobble.shed.compiler.tokeniser.Tokeniser;
+import org.zwobble.shed.compiler.typechecker.CoreModule;
+import org.zwobble.shed.compiler.typechecker.StaticContext;
 import org.zwobble.shed.compiler.typechecker.TypeChecker;
 import org.zwobble.shed.compiler.typechecker.TypeResult;
 
 import com.google.common.base.Joiner;
+import com.google.common.io.ByteStreams;
 import com.google.common.io.CharStreams;
 import com.google.common.io.Files;
 import com.google.gson.JsonArray;
@@ -83,7 +87,7 @@ public class WebApplication {
                     if (typeCheckResult.isSuccess()) {
                         JavaScriptGenerator javaScriptGenerator =
                             new JavaScriptGenerator(new BrowserImportGenerator(), new BrowserModuleWrapper());
-                        JavaScriptNode javaScript = javaScriptGenerator.generate(parseResult.get());
+                        JavaScriptNode javaScript = javaScriptGenerator.generate(parseResult.get(), CoreModule.VALUES);
                         JavaScriptWriter javaScriptWriter = new JavaScriptWriter();
                         javaScriptOutput = javaScriptWriter.write(javaScript);
                     }
@@ -167,15 +171,20 @@ public class WebApplication {
         }
         
         private FileInfo readFileFromPath(String path) {
-            if (path.substring(1).contains("/")) {
-                path = "/";
-            }
-            path = "web" + path;
-            if (!new File(path).exists() || !new File(path).isFile()) {
-                path = "web/index.html";
-            }
             try {
+                if (path.startsWith("/stdlib")) {
+                    InputStream stream = StaticContext.class.getResourceAsStream("/org/zwobble/shed" + path);
+                    return new FileInfo(ByteStreams.toByteArray(stream), contentTypeForPath(path));
+                }
                 
+                if (path.substring(1).contains("/")) {
+                    path = "/";
+                }
+                path = "web" + path;
+                if (!new File(path).exists() || !new File(path).isFile()) {
+                    path = "web/index.html";
+                }
+            
                 return new FileInfo(Files.toByteArray(new File(path)), contentTypeForPath(path));
             } catch (Exception e) {
                 e.printStackTrace();
