@@ -22,7 +22,6 @@ import org.zwobble.shed.compiler.parsing.TokenIterator;
 import org.zwobble.shed.compiler.parsing.nodes.SourceNode;
 import org.zwobble.shed.compiler.tokeniser.TokenPosition;
 import org.zwobble.shed.compiler.tokeniser.Tokeniser;
-import org.zwobble.shed.compiler.typechecker.StaticContext;
 import org.zwobble.shed.compiler.typechecker.TypeChecker;
 import org.zwobble.shed.compiler.typechecker.TypeResult;
 
@@ -37,6 +36,8 @@ import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
+
+import static org.zwobble.shed.compiler.typechecker.DefaultBrowserContext.defaultBrowserContext;
 
 @SuppressWarnings("restriction")
 public class WebApplication {
@@ -76,7 +77,7 @@ public class WebApplication {
                 String javaScriptOutput = null;
                 
                 if (parseResult.isSuccess()) {
-                    TypeResult<Void> typeCheckResult = TypeChecker.typeCheck(parseResult.get(), parseResult, StaticContext.defaultContext());
+                    TypeResult<Void> typeCheckResult = TypeChecker.typeCheck(parseResult.get(), parseResult, defaultBrowserContext());
                     errors.addAll(typeCheckResult.getErrors());
                     
                     if (typeCheckResult.isSuccess()) {
