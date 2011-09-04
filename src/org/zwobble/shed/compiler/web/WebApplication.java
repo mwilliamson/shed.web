@@ -5,28 +5,16 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
 import java.util.List;
 
 import lombok.Data;
 
-import org.zwobble.shed.compiler.codegenerator.BrowserImportGenerator;
-import org.zwobble.shed.compiler.codegenerator.BrowserModuleWrapper;
-import org.zwobble.shed.compiler.codegenerator.JavaScriptGenerator;
-import org.zwobble.shed.compiler.codegenerator.JavaScriptWriter;
-import org.zwobble.shed.compiler.codegenerator.javascript.JavaScriptNode;
+import org.zwobble.shed.compiler.CompilationResult;
+import org.zwobble.shed.compiler.ShedCompiler;
 import org.zwobble.shed.compiler.parsing.CompilerError;
-import org.zwobble.shed.compiler.parsing.ParseResult;
-import org.zwobble.shed.compiler.parsing.Parser;
 import org.zwobble.shed.compiler.parsing.SourcePosition;
-import org.zwobble.shed.compiler.parsing.TokenIterator;
-import org.zwobble.shed.compiler.parsing.nodes.SourceNode;
 import org.zwobble.shed.compiler.tokeniser.TokenPosition;
-import org.zwobble.shed.compiler.tokeniser.Tokeniser;
-import org.zwobble.shed.compiler.typechecker.CoreModule;
 import org.zwobble.shed.compiler.typechecker.StaticContext;
-import org.zwobble.shed.compiler.typechecker.TypeChecker;
-import org.zwobble.shed.compiler.typechecker.TypeResult;
 
 import com.google.common.base.Joiner;
 import com.google.common.io.ByteStreams;
@@ -41,8 +29,6 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 
-import static org.zwobble.shed.compiler.typechecker.DefaultBrowserContext.defaultBrowserContext;
-
 @SuppressWarnings("restriction")
 public class WebApplication {
     private static final int PORT = 8090;
@@ -55,6 +41,8 @@ public class WebApplication {
     }
     
     private static class Handler implements HttpHandler {
+        private final ShedCompiler compiler = ShedCompiler.forBrowser();
+        
         @Override
         public void handle(HttpExchange httpExchange) throws IOException {
             String path = httpExchange.getRequestURI().getPath();
@@ -73,28 +61,9 @@ public class WebApplication {
                 String source = Joiner.on("\n").join(CharStreams.readLines(new InputStreamReader(httpExchange.getRequestBody())));
                 System.out.println("Source: " + source);
 
-                List<CompilerError> errors = new ArrayList<CompilerError>();
+                CompilationResult compilationResult = compiler.compile(source);
                 
-                List<TokenPosition> tokens = new Tokeniser().tokenise(source);
-                ParseResult<SourceNode> parseResult = new Parser().parse(new TokenIterator(tokens));
-                errors.addAll(parseResult.getErrors());
-                String javaScriptOutput = null;
-                
-                if (parseResult.isSuccess()) {
-                    TypeResult<Void> typeCheckResult = TypeChecker.typeCheck(parseResult.get(), parseResult, defaultBrowserContext());
-                    errors.addAll(typeCheckResult.getErrors());
-                    
-                    if (typeCheckResult.isSuccess()) {
-                        JavaScriptGenerator javaScriptGenerator =
-                            new JavaScriptGenerator(new BrowserImportGenerator(), new BrowserModuleWrapper());
-                        JavaScriptNode javaScript = javaScriptGenerator.generate(parseResult.get(), CoreModule.VALUES);
-                        JavaScriptWriter javaScriptWriter = new JavaScriptWriter();
-                        javaScriptOutput = javaScriptWriter.write(javaScript);
-                    }
-                }
-                
-                
-                String response = resultToJson(tokens, errors, javaScriptOutput);
+                String response = resultToJson(compilationResult);
                 
                 byte[] responseBody = response.getBytes();
                 
@@ -109,12 +78,12 @@ public class WebApplication {
             }
         }
 
-        private String resultToJson(List<TokenPosition> tokens, List<CompilerError> errors, String javaScriptOutput) {
+        private String resultToJson(CompilationResult compilationResult) {
             JsonObject response = new JsonObject();
-            response.add("tokens", tokensToJson(tokens));
-            response.add("errors", errorsToJson(errors));
-            if (javaScriptOutput != null) {
-                response.addProperty("javascript", javaScriptOutput);
+            response.add("tokens", tokensToJson(compilationResult.getTokens()));
+            response.add("errors", errorsToJson(compilationResult.getErrors()));
+            if (compilationResult.getJavaScript() != null) {
+                response.addProperty("javascript", compilationResult.getJavaScript());
             }
             return response.toString();
         }
