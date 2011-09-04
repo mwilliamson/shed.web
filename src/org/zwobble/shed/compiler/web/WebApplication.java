@@ -14,7 +14,6 @@ import org.zwobble.shed.compiler.ShedCompiler;
 import org.zwobble.shed.compiler.parsing.CompilerError;
 import org.zwobble.shed.compiler.parsing.SourcePosition;
 import org.zwobble.shed.compiler.tokeniser.TokenPosition;
-import org.zwobble.shed.compiler.typechecker.StaticContext;
 
 import com.google.common.base.Joiner;
 import com.google.common.io.ByteStreams;
@@ -142,8 +141,7 @@ public class WebApplication {
         private FileInfo readFileFromPath(String path) {
             try {
                 if (path.startsWith("/stdlib")) {
-                    InputStream stream = StaticContext.class.getResourceAsStream("/org/zwobble/shed" + path);
-                    return new FileInfo(ByteStreams.toByteArray(stream), contentTypeForPath(path));
+                    return new FileInfo(readStdLib(path), contentTypeForPath(path));
                 }
                 
                 if (path.substring(1).contains("/")) {
@@ -157,6 +155,33 @@ public class WebApplication {
                 return new FileInfo(Files.toByteArray(new File(path)), contentTypeForPath(path));
             } catch (Exception e) {
                 e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+        }
+        
+        private byte[] readStdLib(String path) {
+            try {
+                InputStream stream = ShedCompiler.class.getResourceAsStream("/org/zwobble/shed" + path);
+                if (stream == null && path.endsWith(".js")) {
+                    String browserPath = "/org/zwobble/shed" + path.substring(0, path.length() - ".js".length()) + ".browser.js";
+                    stream = ShedCompiler.class.getResourceAsStream(browserPath);
+                }
+                if (stream == null) {
+                    stream = ShedCompiler.class.getResourceAsStream("/org/zwobble/shed" + path.substring(0, path.length() - ".js".length()) + ".shed");
+                    if (stream == null) {
+                        throw new RuntimeException("Could not load " + path);
+                    }
+                    String source = CharStreams.toString(new InputStreamReader(stream));
+                    CompilationResult compilationResult = compiler.compile(source);
+                    if (compilationResult.isSuccess()) {
+                        return compilationResult.getJavaScript().getBytes();
+                    } else {
+                        throw new RuntimeException("Could not compile " + path);
+                    }
+                } else {
+                    return ByteStreams.toByteArray(stream);
+                }
+            } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         }
