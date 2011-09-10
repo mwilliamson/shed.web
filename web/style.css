@@ -88,7 +88,7 @@ input[type=button] {
     color: #aa3300;
 }
 
-.token-single-line-comment {
+.token-single-line-comment, .token-multi-line-comment {
     color: #d00000;
 }
 
