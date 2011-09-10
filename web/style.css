@@ -88,6 +88,10 @@ input[type=button] {
     color: #aa3300;
 }
 
+.token-single-line-comment {
+    color: #d00000;
+}
+
 .tooltip {
     position: absolute;
     font-size: 0.8em;
