@@ -91,7 +91,7 @@ public class WebApplication {
             JsonArray json = new JsonArray();
             for (TokenPosition tokenPosition : tokens) {
                 JsonObject tokenJson = new JsonObject();
-                tokenJson.add("position", positionToJson(tokenPosition.getPosition()));
+                tokenJson.add("position", positionToJson(tokenPosition.getStartPosition()));
                 String value = tokenPosition.getToken().getValue();
                 if (value == null) {
                     value = "";
