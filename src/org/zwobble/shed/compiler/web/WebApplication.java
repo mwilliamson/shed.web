@@ -10,8 +10,8 @@ import java.util.List;
 import lombok.Data;
 
 import org.zwobble.shed.compiler.CompilationResult;
+import org.zwobble.shed.compiler.CompilerError;
 import org.zwobble.shed.compiler.ShedCompiler;
-import org.zwobble.shed.compiler.parsing.CompilerError;
 import org.zwobble.shed.compiler.parsing.SourcePosition;
 import org.zwobble.shed.compiler.tokeniser.TokenPosition;
 
