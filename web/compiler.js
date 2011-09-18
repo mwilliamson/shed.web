@@ -109,10 +109,14 @@ $(document).ready(function() {
                 javaScriptElement.hide();
             }
         };
-    $("#source input").click(function() {
+    $("#source .compile-button").click(function() {
         var source = $("#source textarea").val();
+        var url = "/compile";
+        if ($("#optimise").is(":checked")) {
+            url += "?optimisation-level=SIMPLE"; 
+        }
         $.ajax({
-            url: "/compile?optimisation-level=SIMPLE",
+            url: url,
             dataType: "json",
             data: source,
             type: "POST",
