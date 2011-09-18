@@ -112,7 +112,7 @@ $(document).ready(function() {
     $("#source input").click(function() {
         var source = $("#source textarea").val();
         $.ajax({
-            url: "/compile",
+            url: "/compile?optimisation-level=SIMPLE",
             dataType: "json",
             data: source,
             type: "POST",

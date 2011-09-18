@@ -4,13 +4,19 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
+import java.net.URLDecoder;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import lombok.Data;
 
 import org.zwobble.shed.compiler.CompilationResult;
 import org.zwobble.shed.compiler.CompilerError;
+import org.zwobble.shed.compiler.OptimisationLevel;
 import org.zwobble.shed.compiler.ShedCompiler;
 import org.zwobble.shed.compiler.parsing.SourcePosition;
 import org.zwobble.shed.compiler.tokeniser.TokenPosition;
@@ -40,8 +46,6 @@ public class WebApplication {
     }
     
     private static class Handler implements HttpHandler {
-        private final ShedCompiler compiler = ShedCompiler.forBrowser();
-        
         @Override
         public void handle(HttpExchange httpExchange) throws IOException {
             String path = httpExchange.getRequestURI().getPath();
@@ -56,7 +60,7 @@ public class WebApplication {
 
         private void handleCompileRequest(HttpExchange httpExchange) throws IOException {
             try {
-
+                ShedCompiler compiler = ShedCompiler.forBrowser(findOptimisationLevel(httpExchange));
                 String source = Joiner.on("\n").join(CharStreams.readLines(new InputStreamReader(httpExchange.getRequestBody())));
                 System.out.println("Source: " + source);
 
@@ -75,6 +79,18 @@ public class WebApplication {
                 e.printStackTrace();
                 throw new RuntimeException(e);
             }
+        }
+
+        private OptimisationLevel findOptimisationLevel(HttpExchange httpExchange) {
+            String queryString = httpExchange.getRequestURI().getRawQuery();
+            if (queryString == null) {
+                return OptimisationLevel.NONE;
+            }
+            List<String> optimisationLevelValues = parseQueryString(queryString).get("optimisation-level");
+            if (optimisationLevelValues == null) {
+                return OptimisationLevel.NONE;
+            }
+            return OptimisationLevel.valueOf(optimisationLevelValues.get(0));
         }
 
         private String resultToJson(CompilationResult compilationResult) {
@@ -172,6 +188,7 @@ public class WebApplication {
                         throw new RuntimeException("Could not load " + path);
                     }
                     String source = CharStreams.toString(new InputStreamReader(stream));
+                    ShedCompiler compiler = ShedCompiler.forBrowser(OptimisationLevel.SIMPLE);
                     CompilationResult compilationResult = compiler.compile(source);
                     if (compilationResult.isSuccess()) {
                         return compilationResult.getJavaScript().getBytes();
@@ -199,6 +216,26 @@ public class WebApplication {
             return "text/html";
         }
     }
+    
+    private static Map<String, List<String>> parseQueryString(String queryString) {
+        try {
+            Map<String, List<String>> params = new HashMap<String, List<String>>();
+            for (String param : queryString.split("&")) {
+                String pair[] = param.split("=");
+                String key = URLDecoder.decode(pair[0], "UTF-8");
+                String value;
+                    value = URLDecoder.decode(pair[1], "UTF-8");
+                if (!params.containsKey(key)) {
+                    params.put(key, new ArrayList<String>());
+                }
+                params.get(key).add(value);
+            }
+            return params;
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     
     @Data
     private static class FileInfo {
