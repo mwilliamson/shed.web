@@ -128,7 +128,7 @@ public class WebApplication {
             JsonArray json = new JsonArray();
             for (CompilerError error : errors) {
                 JsonObject errorJson = new JsonObject();
-                errorJson.add("description", new JsonPrimitive(error.getDescription()));
+                errorJson.add("description", new JsonPrimitive(error.describe()));
                 errorJson.add("start", positionToJson(error.getLocation().getStart()));
                 errorJson.add("end", positionToJson(error.getLocation().getEnd()));
                 json.add(errorJson);
