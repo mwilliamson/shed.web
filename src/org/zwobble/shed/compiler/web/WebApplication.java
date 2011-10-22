@@ -16,9 +16,13 @@ import lombok.Data;
 
 import org.zwobble.shed.compiler.CompilationResult;
 import org.zwobble.shed.compiler.CompilerError;
+import org.zwobble.shed.compiler.CompilerErrorWithLocation;
+import org.zwobble.shed.compiler.CompilerErrorWithSyntaxNode;
 import org.zwobble.shed.compiler.OptimisationLevel;
 import org.zwobble.shed.compiler.ShedCompiler;
+import org.zwobble.shed.compiler.parsing.NodeLocations;
 import org.zwobble.shed.compiler.parsing.SourcePosition;
+import org.zwobble.shed.compiler.parsing.SourceRange;
 import org.zwobble.shed.compiler.tokeniser.TokenPosition;
 
 import com.google.common.base.Joiner;
@@ -96,7 +100,7 @@ public class WebApplication {
         private String resultToJson(CompilationResult compilationResult) {
             JsonObject response = new JsonObject();
             response.add("tokens", tokensToJson(compilationResult.getTokens()));
-            response.add("errors", errorsToJson(compilationResult.getErrors()));
+            response.add("errors", errorsToJson(compilationResult.getErrors(), compilationResult.getNodeLocations()));
             if (compilationResult.getJavaScript() != null) {
                 response.addProperty("javascript", compilationResult.getJavaScript());
             }
@@ -124,18 +128,28 @@ public class WebApplication {
             return json;
         }
 
-        private JsonElement errorsToJson(List<CompilerError> errors) {
+        private JsonElement errorsToJson(List<CompilerError> errors, NodeLocations nodeLocations) {
             JsonArray json = new JsonArray();
             for (CompilerError error : errors) {
                 JsonObject errorJson = new JsonObject();
                 errorJson.add("description", new JsonPrimitive(error.describe()));
-                errorJson.add("start", positionToJson(error.getLocation().getStart()));
-                errorJson.add("end", positionToJson(error.getLocation().getEnd()));
+                errorJson.add("start", positionToJson(locate(error, nodeLocations).getStart()));
+                errorJson.add("end", positionToJson(locate(error, nodeLocations).getEnd()));
                 json.add(errorJson);
             }
             return json;
         }
         
+        private SourceRange locate(CompilerError error, NodeLocations nodeLocations) {
+            if (error instanceof CompilerErrorWithLocation) {
+                return ((CompilerErrorWithLocation) error).getLocation();
+            } else if (error instanceof CompilerErrorWithSyntaxNode) {
+                return nodeLocations.locate(((CompilerErrorWithSyntaxNode) error).getNode());
+            } else {
+                throw new RuntimeException("Cannot locate error");
+            }
+        }
+
         private JsonElement positionToJson(SourcePosition position) {
             JsonObject json = new JsonObject();
             json.add("lineNumber", new JsonPrimitive(position.getLineNumber()));
@@ -159,6 +173,10 @@ public class WebApplication {
                 if (path.startsWith("/stdlib")) {
                     return new FileInfo(readStdLib(path), contentTypeForPath(path));
                 }
+                if (path.equals("/shed.js")) {
+                    InputStream stream = ShedCompiler.class.getResourceAsStream("/org/zwobble/shed/runtime/shed.browser.js");
+                    return new FileInfo(ByteStreams.toByteArray(stream), "application/javascript");
+                }
                 
                 if (path.substring(1).contains("/")) {
                     path = "/";
@@ -177,13 +195,13 @@ public class WebApplication {
         
         private byte[] readStdLib(String path) {
             try {
-                InputStream stream = ShedCompiler.class.getResourceAsStream("/org/zwobble/shed" + path);
+                InputStream stream = ShedCompiler.class.getResourceAsStream("/org/zwobble/shed/runtime" + path);
                 if (stream == null && path.endsWith(".js")) {
                     String browserPath = "/org/zwobble/shed" + path.substring(0, path.length() - ".js".length()) + ".browser.js";
                     stream = ShedCompiler.class.getResourceAsStream(browserPath);
                 }
                 if (stream == null) {
-                    stream = ShedCompiler.class.getResourceAsStream("/org/zwobble/shed" + path.substring(0, path.length() - ".js".length()) + ".shed");
+                    stream = ShedCompiler.class.getResourceAsStream("/org/zwobble/shed/runtime" + path.substring(0, path.length() - ".js".length()) + ".shed");
                     if (stream == null) {
                         throw new RuntimeException("Could not load " + path);
                     }
