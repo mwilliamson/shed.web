@@ -24,6 +24,8 @@ import org.zwobble.shed.compiler.parsing.NodeLocations;
 import org.zwobble.shed.compiler.parsing.SourcePosition;
 import org.zwobble.shed.compiler.parsing.SourceRange;
 import org.zwobble.shed.compiler.tokeniser.TokenPosition;
+import org.zwobble.shed.compiler.typechecker.DefaultBrowserContext;
+import org.zwobble.shed.compiler.typechecker.StaticContext;
 
 import com.google.common.base.Joiner;
 import com.google.common.io.ByteStreams;
@@ -68,7 +70,7 @@ public class WebApplication {
                 String source = Joiner.on("\n").join(CharStreams.readLines(new InputStreamReader(httpExchange.getRequestBody())));
                 System.out.println("Source: " + source);
 
-                CompilationResult compilationResult = compiler.compile(source);
+                CompilationResult compilationResult = compiler.compile(source, context());
                 
                 String response = resultToJson(compilationResult);
                 
@@ -195,19 +197,15 @@ public class WebApplication {
         
         private byte[] readStdLib(String path) {
             try {
-                InputStream stream = ShedCompiler.class.getResourceAsStream("/org/zwobble/shed/runtime" + path);
-                if (stream == null && path.endsWith(".js")) {
-                    String browserPath = "/org/zwobble/shed" + path.substring(0, path.length() - ".js".length()) + ".browser.js";
-                    stream = ShedCompiler.class.getResourceAsStream(browserPath);
-                }
+                InputStream stream = openRuntimeSource(path);
                 if (stream == null) {
-                    stream = ShedCompiler.class.getResourceAsStream("/org/zwobble/shed/runtime" + path.substring(0, path.length() - ".js".length()) + ".shed");
+                    stream = openRuntimeSource(path.substring(0, path.length() - ".js".length()) + ".shed");
                     if (stream == null) {
                         throw new RuntimeException("Could not load " + path);
                     }
                     String source = CharStreams.toString(new InputStreamReader(stream));
                     ShedCompiler compiler = ShedCompiler.forBrowser(OptimisationLevel.SIMPLE);
-                    CompilationResult compilationResult = compiler.compile(source);
+                    CompilationResult compilationResult = compiler.compile(source, context());
                     if (compilationResult.isSuccess()) {
                         return compilationResult.getJavaScript().getBytes();
                     } else {
@@ -219,6 +217,17 @@ public class WebApplication {
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
+        }
+
+        private InputStream openRuntimeSource(String path) {
+            InputStream stream = ShedCompiler.class.getResourceAsStream("/org/zwobble/shed/runtime" + path);
+            String extension = path.substring(path.lastIndexOf(".") + 1);
+            System.out.println(extension);
+            if (stream == null && (extension.equals("js") || extension.equals("shed"))) {
+                String browserPath = "/org/zwobble/shed/runtime" + path.substring(0, path.length() - extension.length()) + "browser." + extension;
+                stream = ShedCompiler.class.getResourceAsStream(browserPath);
+            }
+            return stream;
         }
 
         private String contentTypeForPath(String path) {
@@ -252,6 +261,10 @@ public class WebApplication {
         } catch (UnsupportedEncodingException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private static StaticContext context() {
+        return DefaultBrowserContext.defaultBrowserContext();
     }
 
     
