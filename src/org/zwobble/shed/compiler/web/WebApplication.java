@@ -20,6 +20,7 @@ import org.zwobble.shed.compiler.CompilerErrorWithLocation;
 import org.zwobble.shed.compiler.CompilerErrorWithSyntaxNode;
 import org.zwobble.shed.compiler.OptimisationLevel;
 import org.zwobble.shed.compiler.ShedCompiler;
+import org.zwobble.shed.compiler.metaclassgeneration.MetaClasses;
 import org.zwobble.shed.compiler.parsing.NodeLocations;
 import org.zwobble.shed.compiler.parsing.SourcePosition;
 import org.zwobble.shed.compiler.parsing.SourceRange;
@@ -70,7 +71,8 @@ public class WebApplication {
                 String source = Joiner.on("\n").join(CharStreams.readLines(new InputStreamReader(httpExchange.getRequestBody())));
                 System.out.println("Source: " + source);
 
-                CompilationResult compilationResult = compiler.compile(source, context());
+                MetaClasses metaClasses = MetaClasses.create();
+                CompilationResult compilationResult = compiler.compile(source, context(metaClasses), metaClasses);
                 
                 String response = resultToJson(compilationResult);
                 
@@ -205,11 +207,12 @@ public class WebApplication {
                     }
                     String source = CharStreams.toString(new InputStreamReader(stream));
                     ShedCompiler compiler = ShedCompiler.forBrowser(OptimisationLevel.SIMPLE);
-                    CompilationResult compilationResult = compiler.compile(source, context());
+                    MetaClasses metaClasses = MetaClasses.create();
+                    CompilationResult compilationResult = compiler.compile(source, context(metaClasses), metaClasses);
                     if (compilationResult.isSuccess()) {
                         return compilationResult.getJavaScript().getBytes();
                     } else {
-                        throw new RuntimeException("Could not compile " + path);
+                        throw new RuntimeException("Could not compile " + path + "\nErrors: " + compilationResult.getErrors());
                     }
                 } else {
                     return ByteStreams.toByteArray(stream);
@@ -222,7 +225,6 @@ public class WebApplication {
         private InputStream openRuntimeSource(String path) {
             InputStream stream = ShedCompiler.class.getResourceAsStream("/org/zwobble/shed/runtime" + path);
             String extension = path.substring(path.lastIndexOf(".") + 1);
-            System.out.println(extension);
             if (stream == null && (extension.equals("js") || extension.equals("shed"))) {
                 String browserPath = "/org/zwobble/shed/runtime" + path.substring(0, path.length() - extension.length()) + "browser." + extension;
                 stream = ShedCompiler.class.getResourceAsStream(browserPath);
@@ -263,8 +265,10 @@ public class WebApplication {
         }
     }
 
-    private static StaticContext context() {
-        return DefaultBrowserContext.defaultBrowserContext();
+    private static StaticContext context(MetaClasses metaClasses) {
+        StaticContext context = new StaticContext(metaClasses);
+        DefaultBrowserContext.defaultBrowserContext(context, metaClasses);
+        return context;
     }
 
     
