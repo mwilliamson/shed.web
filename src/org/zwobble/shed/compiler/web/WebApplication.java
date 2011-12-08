@@ -2,7 +2,6 @@ package org.zwobble.shed.compiler.web;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
@@ -20,6 +19,11 @@ import org.zwobble.shed.compiler.CompilerErrorWithLocation;
 import org.zwobble.shed.compiler.CompilerErrorWithSyntaxNode;
 import org.zwobble.shed.compiler.OptimisationLevel;
 import org.zwobble.shed.compiler.ShedCompiler;
+import org.zwobble.shed.compiler.SourceFileCompilationResult;
+import org.zwobble.shed.compiler.files.DelegatingFileSource;
+import org.zwobble.shed.compiler.files.FileSource;
+import org.zwobble.shed.compiler.files.ResourceFileSource;
+import org.zwobble.shed.compiler.files.StringFileSource;
 import org.zwobble.shed.compiler.metaclassgeneration.MetaClasses;
 import org.zwobble.shed.compiler.parsing.NodeLocations;
 import org.zwobble.shed.compiler.parsing.SourcePosition;
@@ -29,7 +33,6 @@ import org.zwobble.shed.compiler.typechecker.DefaultBrowserContext;
 import org.zwobble.shed.compiler.typechecker.StaticContext;
 
 import com.google.common.base.Joiner;
-import com.google.common.io.ByteStreams;
 import com.google.common.io.CharStreams;
 import com.google.common.io.Files;
 import com.google.gson.JsonArray;
@@ -71,8 +74,10 @@ public class WebApplication {
                 String source = Joiner.on("\n").join(CharStreams.readLines(new InputStreamReader(httpExchange.getRequestBody())));
                 System.out.println("Source: " + source);
 
+                FileSource fileSource = DelegatingFileSource.create(ResourceFileSource.create(), StringFileSource.create("uploaded.shed", source));
+                
                 MetaClasses metaClasses = MetaClasses.create();
-                CompilationResult compilationResult = compiler.compile(source, context(metaClasses), metaClasses);
+                CompilationResult compilationResult = compiler.compile(fileSource, context(metaClasses), metaClasses);
                 
                 String response = resultToJson(compilationResult);
                 
@@ -100,8 +105,14 @@ public class WebApplication {
             }
             return OptimisationLevel.valueOf(optimisationLevelValues.get(0));
         }
-
+        
         private String resultToJson(CompilationResult compilationResult) {
+            JsonObject response = new JsonObject();
+            response.addProperty("javascript", compilationResult.output());
+            return response.toString();
+        }
+
+        private String resultToJson(SourceFileCompilationResult compilationResult) {
             JsonObject response = new JsonObject();
             response.add("tokens", tokensToJson(compilationResult.getTokens()));
             response.add("errors", errorsToJson(compilationResult.getErrors(), compilationResult.getNodeLocations()));
@@ -174,14 +185,6 @@ public class WebApplication {
         
         private FileInfo readFileFromPath(String path) {
             try {
-                if (path.startsWith("/stdlib")) {
-                    return new FileInfo(readStdLib(path), contentTypeForPath(path));
-                }
-                if (path.equals("/shed.js")) {
-                    InputStream stream = ShedCompiler.class.getResourceAsStream("/org/zwobble/shed/runtime/shed.browser.js");
-                    return new FileInfo(ByteStreams.toByteArray(stream), "application/javascript");
-                }
-                
                 if (path.substring(1).contains("/")) {
                     path = "/";
                 }
@@ -195,41 +198,6 @@ public class WebApplication {
                 e.printStackTrace();
                 throw new RuntimeException(e);
             }
-        }
-        
-        private byte[] readStdLib(String path) {
-            try {
-                InputStream stream = openRuntimeSource(path);
-                if (stream == null) {
-                    stream = openRuntimeSource(path.substring(0, path.length() - ".js".length()) + ".shed");
-                    if (stream == null) {
-                        throw new RuntimeException("Could not load " + path);
-                    }
-                    String source = CharStreams.toString(new InputStreamReader(stream));
-                    ShedCompiler compiler = ShedCompiler.forBrowser(OptimisationLevel.SIMPLE);
-                    MetaClasses metaClasses = MetaClasses.create();
-                    CompilationResult compilationResult = compiler.compile(source, context(metaClasses), metaClasses);
-                    if (compilationResult.isSuccess()) {
-                        return compilationResult.getJavaScript().getBytes();
-                    } else {
-                        throw new RuntimeException("Could not compile " + path + "\nErrors: " + compilationResult.getErrors());
-                    }
-                } else {
-                    return ByteStreams.toByteArray(stream);
-                }
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        private InputStream openRuntimeSource(String path) {
-            InputStream stream = ShedCompiler.class.getResourceAsStream("/org/zwobble/shed/runtime" + path);
-            String extension = path.substring(path.lastIndexOf(".") + 1);
-            if (stream == null && (extension.equals("js") || extension.equals("shed"))) {
-                String browserPath = "/org/zwobble/shed/runtime" + path.substring(0, path.length() - extension.length()) + "browser." + extension;
-                stream = ShedCompiler.class.getResourceAsStream(browserPath);
-            }
-            return stream;
         }
 
         private String contentTypeForPath(String path) {

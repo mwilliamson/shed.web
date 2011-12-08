@@ -121,8 +121,8 @@ $(document).ready(function() {
             data: source,
             type: "POST",
             success: function(response) {
-                displayHighlightedSourceWithErrors(source, response.tokens, response.errors);
-                displayErrors(response.errors);
+                //displayHighlightedSourceWithErrors(source, response.tokens, response.errors);
+                //displayErrors(response.errors);
                 displayJavaScript(response.javascript);
                 compiledJavaScript = response.javascript;
             }
