@@ -14,23 +14,20 @@ import java.util.Map;
 import lombok.Data;
 
 import org.zwobble.shed.compiler.CompilationResult;
-import org.zwobble.shed.compiler.CompilerError;
-import org.zwobble.shed.compiler.CompilerErrorWithLocation;
-import org.zwobble.shed.compiler.CompilerErrorWithSyntaxNode;
 import org.zwobble.shed.compiler.OptimisationLevel;
 import org.zwobble.shed.compiler.ShedCompiler;
 import org.zwobble.shed.compiler.SourceFileCompilationResult;
+import org.zwobble.shed.compiler.errors.CompilerError;
+import org.zwobble.shed.compiler.errors.CompilerErrorWithLocation;
+import org.zwobble.shed.compiler.errors.CompilerErrorWithSyntaxNode;
 import org.zwobble.shed.compiler.files.DelegatingFileSource;
 import org.zwobble.shed.compiler.files.FileSource;
 import org.zwobble.shed.compiler.files.ResourceFileSource;
 import org.zwobble.shed.compiler.files.StringFileSource;
-import org.zwobble.shed.compiler.metaclassgeneration.MetaClasses;
 import org.zwobble.shed.compiler.parsing.NodeLocations;
 import org.zwobble.shed.compiler.parsing.SourcePosition;
 import org.zwobble.shed.compiler.parsing.SourceRange;
 import org.zwobble.shed.compiler.tokeniser.TokenPosition;
-import org.zwobble.shed.compiler.typechecker.DefaultBrowserContext;
-import org.zwobble.shed.compiler.typechecker.StaticContext;
 
 import com.google.common.base.Joiner;
 import com.google.common.io.CharStreams;
@@ -76,8 +73,7 @@ public class WebApplication {
 
                 FileSource fileSource = DelegatingFileSource.create(ResourceFileSource.create(), StringFileSource.create("uploaded.shed", source));
                 
-                MetaClasses metaClasses = MetaClasses.create();
-                CompilationResult compilationResult = compiler.compile(fileSource, context(metaClasses), metaClasses);
+                CompilationResult compilationResult = compiler.compile(fileSource, "blah.main");
                 
                 String response = resultToJson(compilationResult);
                 
@@ -122,7 +118,7 @@ public class WebApplication {
             return response.toString();
         }
 
-        private JsonElement tokensToJson(List<TokenPosition> tokens) {
+        private JsonElement tokensToJson(Iterable<TokenPosition> tokens) {
             JsonArray json = new JsonArray();
             for (TokenPosition tokenPosition : tokens) {
                 JsonObject tokenJson = new JsonObject();
@@ -232,13 +228,6 @@ public class WebApplication {
             throw new RuntimeException(e);
         }
     }
-
-    private static StaticContext context(MetaClasses metaClasses) {
-        StaticContext context = new StaticContext(metaClasses);
-        DefaultBrowserContext.defaultBrowserContext(context, metaClasses);
-        return context;
-    }
-
     
     @Data
     private static class FileInfo {
